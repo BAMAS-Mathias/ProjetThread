@@ -3,6 +3,7 @@
 #include <thread>
 #include <unistd.h>
 #include <atomic>
+#include <vector>
 
 using namespace std;
 
@@ -22,17 +23,15 @@ void getServingFromPot(){
 
 void savage(unsigned id){
     while(true){
-        mut.lock();
 
-        if(serving == 0){
+        if(serving <= 0){
             potEmpty.unlock();
             potFull.lock();
         }
 
         cout << "Savage n°" << id << " Takes a meal" << endl;
         getServingFromPot();
-        mut.unlock();
-        sleep(rand() % 10);
+        sleep(2);
     }
 }
 
@@ -40,9 +39,10 @@ void cook() {
     while(true){
         potEmpty.lock();
         cout << "Pot is empty reloading..." << endl;
-        sleep(5);
+        sleep(2);
         cout << "Pot reloaded" << endl;
         putServingsInPot(7);
+        potFull.unlock();
     }
 }
 
@@ -53,13 +53,18 @@ int main()
     potFull.lock();
 
     thread firstCook(cook);
-    thread firstSavage(savage,1);
-    thread secondSavage(savage,2);
-    thread thirdSavage(savage, 3);
 
-    firstCook.join();
-    secondSavage.join();
-    thirdSavage.join();
+    vector<thread> v_thread;
+
+    for(unsigned i = 0; i < 100; ++i){
+        v_thread.push_back(thread(savage,i));
+    }
+
+    for(auto& thread : v_thread){
+        thread.join();
+    }
+
+
 
     return 0;
 }
